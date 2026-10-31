@@ -231,6 +231,7 @@ export interface Settings {
     auto_start_breaks: number;
     auto_start_focus: number;
     sound: number;
+    tick_sound: number;
     daily_goal_min: number;
   };
   notifications: {

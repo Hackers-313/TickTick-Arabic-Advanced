@@ -8,22 +8,29 @@ import { Modal } from './Modal';
 import { FilterEditor } from './FilterEditor';
 import { Icon, IconPicker } from './Icon';
 
-const PAGE_ITEMS = [
-  { key: 'calendar', icon: 'calendar', label: 'calendar' },
-  { key: 'kanban', icon: 'columns', label: 'kanban' },
-  { key: 'timeline', icon: 'activity', label: 'timeline' },
-  { key: 'matrix', icon: 'compass', label: 'matrix' },
-  { key: 'habits', icon: 'flame', label: 'habits' },
-  { key: 'focus', icon: 'timer', label: 'focus' },
-  { key: 'stats', icon: 'trending', label: 'statistics' },
-  { key: 'countdowns', icon: 'award', label: 'countdowns' },
-  { key: 'sticky', icon: 'sticky', label: 'stickyNotes' },
+const PAGE_GROUPS = [
+  { id: 'planning', ar: 'التخطيط', en: 'Planning', icon: 'calendar', items: [
+    { key: 'calendar', icon: 'calendar', label: 'calendar' },
+    { key: 'kanban', icon: 'columns', label: 'kanban' },
+    { key: 'timeline', icon: 'activity', label: 'timeline' },
+    { key: 'matrix', icon: 'compass', label: 'matrix' },
+  ] },
+  { id: 'progress', ar: 'التقدم والتركيز', en: 'Progress & focus', icon: 'trending', items: [
+    { key: 'habits', icon: 'flame', label: 'habits' },
+    { key: 'focus', icon: 'timer', label: 'focus' },
+    { key: 'stats', icon: 'trending', label: 'statistics' },
+  ] },
+  { id: 'extras', ar: 'أدوات إضافية', en: 'More tools', icon: 'layers', items: [
+    { key: 'countdowns', icon: 'award', label: 'countdowns' },
+    { key: 'sticky', icon: 'sticky', label: 'stickyNotes' },
+  ] },
 ] as const;
 
 export function Sidebar() {
   const { data, settings, view, setView, t, lang, openEditor, updateSettings, mutate, toast } = useApp();
   const [projectModal, setProjectModal] = useState<{ open: boolean; project?: Project }>({ open: false });
   const [filterModal, setFilterModal] = useState<{ open: boolean; filter?: SmartFilter }>({ open: false });
+  const [openGroup, setOpenGroup] = useState<string | null>('planning');
 
   const counts = useMemo(() => (data ? smartCounts(data) : null), [data]);
   const tags = useMemo(() => {
@@ -172,16 +179,22 @@ export function Sidebar() {
           <div className="sidebar-title">
             <span>{t('advanced')}</span>
           </div>
-          {PAGE_ITEMS.map((item) => (
-            <NavItem
-              key={item.key}
-              icon={item.icon}
-              label={t(item.label)}
-              active={current === `page:${item.key}`}
-              collapsed={collapsed}
-              onClick={() => setView({ kind: 'page', key: item.key })}
-              testId={`page:${item.key}`}
-            />
+          {PAGE_GROUPS.map((group) => (
+            <div key={group.id} className="nav-group">
+              <button className="nav-item nav-group-toggle" title={lang === 'ar' ? group.ar : group.en}
+                data-testid={`group:${group.id}`} aria-expanded={openGroup === group.id} aria-controls={`nav-group-${group.id}`}
+                onClick={() => setOpenGroup(openGroup === group.id ? null : group.id)}>
+                <span className="icon"><Icon name={group.icon} size={17} /></span>
+                <span className="label">{lang === 'ar' ? group.ar : group.en}</span>
+                <span className="group-chevron"><Icon name={openGroup === group.id ? 'chevron-down' : (lang === 'ar' ? 'chevron-left' : 'chevron-right')} size={14} /></span>
+              </button>
+              <div id={`nav-group-${group.id}`} hidden={openGroup !== group.id} className="nav-group-items">
+                {group.items.map((item) => (
+                  <NavItem key={item.key} icon={item.icon} label={t(item.label)} active={current === `page:${item.key}`}
+                    collapsed={collapsed} onClick={() => setView({ kind: 'page', key: item.key })} testId={`page:${item.key}`} />
+                ))}
+              </div>
+            </div>
           ))}
           <NavItem
             icon="trash"
@@ -362,7 +375,7 @@ function ProjectEditor({
           <input type="color" value={color} onChange={(e) => setColor(e.target.value)} style={{ height: 38, padding: 3 }} />
         </div>
       </div>
-      <IconPicker value={icon} onChange={setIcon} label={t('icon')} />
+      <IconPicker value={icon} onChange={setIcon} label={t('icon')} lang={lang} />
       <div className="row">
         <div className="field">
           <label>{t('defaultView')}</label>

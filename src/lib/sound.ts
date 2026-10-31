@@ -37,3 +37,24 @@ export async function playCompletionSound(): Promise<boolean> {
     return false;
   }
 }
+
+/** Short quiet tick; the context must already be unlocked by a user gesture. */
+export function playTimerTick(): boolean {
+  if (!context || context.state !== 'running') return false;
+  try {
+    const now = context.currentTime;
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(1000, now);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.12, now + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.075);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
+    oscillator.start(now);
+    oscillator.stop(now + 0.08);
+    return true;
+  } catch { return false; }
+}

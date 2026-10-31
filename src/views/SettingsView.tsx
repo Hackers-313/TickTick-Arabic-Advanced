@@ -276,6 +276,12 @@ export function SettingsView() {
                   value={settings.pomodoro.sound === 1}
                   onChange={(v) => set({ pomodoro: { ...settings.pomodoro, sound: v ? 1 : 0 } })}
                 />
+                <ToggleRow
+                  title={lang === 'ar' ? 'صوت تكتكة الساعة' : 'Clock ticking'}
+                  desc={lang === 'ar' ? 'تكتكة هادئة أثناء تشغيل المؤقت. تتطلب تفعيل الصوت أعلاه.' : 'A quiet tick while the timer runs. Requires sound to be enabled above.'}
+                  value={settings.pomodoro.tick_sound === 1}
+                  onChange={(v) => set({ pomodoro: { ...settings.pomodoro, tick_sound: v ? 1 : 0 } })}
+                />
                 <button className="btn" onClick={() => void testSound()}>{lang === 'ar' ? 'اختبار الصوت' : 'Test sound'}</button>
               </div>
             )}

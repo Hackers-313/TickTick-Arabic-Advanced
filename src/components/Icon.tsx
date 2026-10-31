@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import {
   Activity,
   AlarmClock,
@@ -315,21 +315,36 @@ export function IconPicker({
   value,
   onChange,
   label,
+  lang = 'ar',
 }: {
   value: string;
   onChange: (name: string) => void;
   label?: string;
+  lang?: 'ar' | 'en';
 }) {
+  const groups = [
+    { id: 'work', ar: 'العمل والدراسة', en: 'Work & study', icons: ['folder', 'briefcase', 'book', 'graduation', 'mail', 'layers'] },
+    { id: 'life', ar: 'الحياة والصحة', en: 'Life & health', icons: ['home', 'heart', 'dumbbell', 'cart', 'wallet', 'user'] },
+    { id: 'goals', ar: 'الأهداف والأفكار', en: 'Goals & ideas', icons: ['target', 'star', 'flame', 'zap', 'sparkles', 'palette'] },
+    { id: 'other', ar: 'الوقت والمناسبات', en: 'Time & events', icons: ['plane', 'map-pin', 'award', 'cake', 'clock', 'calendar'] },
+  ];
+  const [group, setGroup] = useState(() => groups.find((entry) => entry.icons.includes(iconName(value)))?.id ?? 'work');
+  const choices = groups.find((entry) => entry.id === group)?.icons ?? [];
   return (
     <div className="icon-picker">
       {label ? <span className="small muted">{label}</span> : null}
+      <div className="icon-group-tabs" role="group" aria-label={lang === 'ar' ? 'مجموعات الأيقونات' : 'Icon groups'}>
+        {groups.map((entry) => <button key={entry.id} type="button" className={`icon-group-tab ${entry.id === group ? 'active' : ''}`} aria-pressed={entry.id === group} onClick={() => setGroup(entry.id)}>{lang === 'ar' ? entry.ar : entry.en}</button>)}
+      </div>
       <div className="icon-picker-grid">
-        {ICON_CHOICES.map((choice) => (
+        {ICON_CHOICES.filter((choice) => choices.includes(choice.name)).map((choice) => (
           <button
             key={choice.name}
             type="button"
             className={`icon-choice ${iconName(value) === choice.name ? 'active' : ''}`}
-            title={choice.ar}
+            title={lang === 'ar' ? choice.ar : choice.en}
+            aria-label={lang === 'ar' ? choice.ar : choice.en}
+            aria-pressed={iconName(value) === choice.name}
             onClick={() => onChange(choice.name)}
           >
             <Icon name={choice.name} size={18} />

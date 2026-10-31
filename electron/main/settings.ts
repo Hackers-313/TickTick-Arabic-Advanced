@@ -17,6 +17,7 @@ export const DEFAULT_SETTINGS: Settings = {
     auto_start_breaks: 0,
     auto_start_focus: 0,
     sound: 1,
+    tick_sound: 1,
     daily_goal_min: 120,
   },
   notifications: {

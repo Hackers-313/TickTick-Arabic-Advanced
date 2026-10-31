@@ -58,7 +58,7 @@ try {
   if (result.task !== 'completed' || !result.habit || result.log < 1 || !result.version || errors.length) throw new Error(JSON.stringify({ result, errors }));
   await page.evaluate(async () => {
     const b = await window.api.invoke('bootstrap');
-    await window.api.invoke('settings.update', { pomodoro: { ...b.settings.pomodoro, focus_min: 1 / 60, sound: 1 }, notifications: { ...b.settings.notifications, sound: 1 } });
+    await window.api.invoke('settings.update', { pomodoro: { ...b.settings.pomodoro, focus_min: 3 / 60, sound: 1, tick_sound: 1 }, notifications: { ...b.settings.notifications, sound: 1 } });
     await window.api.invoke('tasks.create', { title: 'Audio UI check', project_id: b.projects[0].id });
   });
   await page.reload();
@@ -67,11 +67,19 @@ try {
   await page.locator('.task').filter({ hasText: 'Audio UI check' }).locator('.checkbox').click();
   await page.waitForFunction(() => window.__testAudioStarts >= 3, null, { timeout: 10000 });
   const afterTask = await page.evaluate(() => window.__testAudioStarts);
+  await page.locator('[data-testid="group:progress"]').click();
   await page.locator('[data-testid="page:focus"]').click();
   await page.getByRole('button', { name: 'بدء', exact: false }).click();
+  await page.waitForFunction((previous) => window.__testAudioStarts > previous, afterTask, { timeout: 10000 });
   await page.locator('[data-testid="smart:today"]').click();
   await page.waitForFunction(async () => (await window.api.invoke('bootstrap')).focusSessions.some((session) => session.completed === 1), null, { timeout: 10000 });
-  await page.waitForFunction((previous) => window.__testAudioStarts >= previous + 3, afterTask, { timeout: 10000 });
+  await page.waitForFunction((previous) => window.__testAudioStarts >= previous + 6, afterTask, { timeout: 10000 });
+  await page.getByTitle('مشروع جديد', { exact: true }).click();
+  if (await page.locator('.icon-picker-grid .icon-choice').count() !== 6) throw new Error('Icon groups are not filtered');
+  await page.getByRole('button', { name: 'الحياة والصحة' }).click();
+  await page.getByRole('button', { name: 'صحة', exact: true }).click();
+  if (await page.getByRole('button', { name: 'صحة', exact: true }).getAttribute('aria-pressed') !== 'true') throw new Error('Icon selection failed');
+  await page.locator('.modal-header button').click();
   const collapse = page.getByTitle('Collapse', { exact: true });
   await collapse.click();
   await page.waitForFunction(() => document.querySelector('.sidebar')?.classList.contains('collapsed'));

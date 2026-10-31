@@ -29,4 +29,21 @@ describe('completion sound', () => {
     const { playCompletionSound } = await import('../src/lib/sound');
     expect(await playCompletionSound()).toBe(false);
   });
+
+  it('plays a short tick only after audio is prepared', async () => {
+    const starts = vi.fn();
+    const stops = vi.fn();
+    class MockAudioContext {
+      state = 'running'; currentTime = 5; destination = {};
+      createOscillator() { return { frequency: { setValueAtTime: vi.fn() }, connect: vi.fn(), disconnect: vi.fn(), start: starts, stop: stops, onended: null }; }
+      createGain() { return { gain: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() }, connect: vi.fn(), disconnect: vi.fn() }; }
+    }
+    vi.stubGlobal('AudioContext', MockAudioContext);
+    const { prepareSound, playTimerTick } = await import('../src/lib/sound');
+    expect(playTimerTick()).toBe(false);
+    expect(await prepareSound()).toBe(true);
+    expect(playTimerTick()).toBe(true);
+    expect(starts).toHaveBeenCalledWith(5);
+    expect(stops).toHaveBeenCalledWith(5.08);
+  });
 });

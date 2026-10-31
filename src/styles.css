@@ -20,6 +20,9 @@
 .brand-mark, .icon-picker-grid, .meta { display: inline-flex; align-items: center; gap: 6px; }
 .brand-mark { color: var(--accent); }
 .icon-picker { margin: 12px 0; }
+.icon-group-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.icon-group-tab { padding: 5px 9px; border-radius: 8px; color: var(--muted); font-size: 12px; }
+.icon-group-tab:hover, .icon-group-tab.active { background: var(--accent-soft); color: var(--accent); }
 .icon-picker-grid { display: flex; flex-wrap: wrap; margin-top: 8px; }
 .icon-choice { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 10px; }
 .icon-choice:hover, .icon-choice.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
@@ -309,10 +312,14 @@ kbd {
 .sidebar.collapsed .label,
 .sidebar.collapsed .count,
 .sidebar.collapsed .sidebar-title,
+.sidebar.collapsed .group-chevron,
 .sidebar.collapsed kbd { display: none; }
 .sidebar.collapsed .nav-item,
 .sidebar.collapsed .quick-add { justify-content: center; padding-inline: 0; }
 .sidebar.collapsed .nav-item .icon { display: grid; place-items: center; }
+.nav-group-toggle { font-weight: 600; }
+.nav-group-items { padding-inline-start: 12px; }
+.sidebar.collapsed .nav-group-items { padding-inline-start: 0; }
 .sidebar-scroll {
   flex: 1;
   overflow-y: auto;

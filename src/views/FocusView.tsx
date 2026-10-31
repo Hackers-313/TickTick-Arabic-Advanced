@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useApp } from '../store';
 import { formatTime, parseLocal, startOfDay, toLocalISO } from '../../shared/date';
-import { prepareSound, playCompletionSound } from '../lib/sound';
+import { prepareSound, playCompletionSound, playTimerTick } from '../lib/sound';
 import { Icon } from '../components/Icon';
 
 type Mode = 'focus' | 'short_break' | 'long_break' | 'stopwatch';
@@ -40,11 +40,12 @@ export function FocusView() {
       const seconds = Math.floor((now - previous) / 1000);
       if (seconds < 1) return;
       previous += seconds * 1000;
+      if (pomodoro?.sound && pomodoro.tick_sound) playTimerTick();
       if (mode === 'stopwatch') setElapsed((e) => e + seconds);
       else setRemaining((r) => Math.max(0, r - seconds));
     }, 1000);
     return () => window.clearInterval(id);
-  }, [running, mode]);
+  }, [running, mode, pomodoro?.sound, pomodoro?.tick_sound]);
 
   useEffect(() => {
     if (!running || mode === 'stopwatch' || remaining > 0) return;

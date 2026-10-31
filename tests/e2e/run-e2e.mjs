@@ -110,13 +110,17 @@ try {
 
   await page.evaluate(async () => {
     const boot = await window.api.invoke('bootstrap');
-    await window.api.invoke('settings.update', { pomodoro: { ...boot.settings.pomodoro, focus_min: 1 / 60, sound: 1 } });
+    await window.api.invoke('settings.update', { pomodoro: { ...boot.settings.pomodoro, focus_min: 3 / 60, sound: 1, tick_sound: 1 } });
   });
+  await page.locator('[data-testid="group:progress"]').click();
   await page.locator('[data-testid="page:focus"]').click();
-  await page.locator('.timer-time').getByText('00:01').waitFor({ timeout: 15000 });
+  await page.locator('.timer-time').getByText('00:03').waitFor({ timeout: 15000 });
+  const beforeTick = await page.evaluate(() => window.__testAudioStarts);
   await page.getByRole('button', { name: 'بدء', exact: false }).click();
+  await page.waitForFunction((previous) => window.__testAudioStarts > previous, beforeTick, { timeout: 10000 });
+  check('running timer schedules ticking sound', true);
   await page.locator('[data-testid="smart:all"]').click();
-  await page.waitForFunction(() => window.__testAudioStarts >= 6, undefined, { timeout: 15000 });
+  await page.waitForFunction((previous) => window.__testAudioStarts >= previous + 6, beforeTick, { timeout: 15000 });
   check('timer schedules audio after navigating away', true);
 
   // 5. Switch to English + light theme and verify direction/theme.
@@ -152,6 +156,8 @@ try {
   });
   const pages = ['calendar', 'kanban', 'timeline', 'matrix', 'habits', 'focus', 'stats', 'countdowns', 'sticky', 'settings', 'sync'];
   for (const key of pages) {
+    const group = ['calendar', 'kanban', 'timeline', 'matrix'].includes(key) ? 'planning' : ['habits', 'focus', 'stats'].includes(key) ? 'progress' : ['countdowns', 'sticky'].includes(key) ? 'extras' : null;
+    if (group && await page.locator(`[data-testid="group:${group}"]`).getAttribute('aria-expanded') !== 'true') await page.locator(`[data-testid="group:${group}"]`).click();
     await page.locator(`[data-testid="page:${key}"]`).click();
     await page.waitForTimeout(300);
     const body = await page.locator('.main:visible, .page:visible').first().innerText().catch(() => '');
