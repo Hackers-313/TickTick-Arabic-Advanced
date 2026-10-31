@@ -7,6 +7,7 @@ import { sortTasks } from '../../shared/filters';
 import { describeRule } from '../../shared/recurrence';
 import { QuickAdd } from './QuickAdd';
 import { Icon } from './Icon';
+import { playCompletionSound, prepareSound } from '../lib/sound';
 
 export type SortKey = 'manual' | 'due' | 'priority' | 'created' | 'title';
 
@@ -31,7 +32,7 @@ export function TaskList({
   quickAddDefaults?: Partial<Task>;
   emptyText?: string;
 }) {
-  const { lang, t, call, refresh, toast } = useApp();
+  const { lang, t, call, refresh, toast, settings } = useApp();
   const [sortBy, setSortBy] = useState<SortKey>('manual');
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
@@ -55,10 +56,15 @@ export function TaskList({
   };
 
   const toggleComplete = async (task: Task) => {
+    const completing = task.status !== 'completed';
+    if (completing && settings?.notifications.sound) void prepareSound();
     try {
-      const res = (await call('tasks.complete', task.id, task.status !== 'completed')) as
+      const res = (await call('tasks.complete', task.id, completing)) as
         | { task: Task; next: Task | null }
         | null;
+      if (completing && res?.task && settings?.notifications.sound) {
+        if (!(await playCompletionSound())) toast(lang === 'ar' ? 'تعذّر تشغيل الصوت؛ جرّب اختبار الصوت في الإعدادات.' : 'Audio unavailable; try Test sound in Settings.', 'error');
+      }
       await refresh();
       if (res?.next) toast(lang === 'ar' ? 'أُنشئت النسخة التالية من المهمة المتكررة' : 'Next occurrence created');
     } catch (err) {

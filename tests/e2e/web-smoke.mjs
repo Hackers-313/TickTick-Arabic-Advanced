@@ -23,6 +23,14 @@ try {
   if (!ready) throw new Error('Preview server did not start');
   browser = await chromium.launch({ executablePath, headless: true });
   const context = await browser.newContext();
+  await context.addInitScript(() => {
+    window.__testAudioStarts = 0;
+    const original = AudioScheduledSourceNode.prototype.start;
+    AudioScheduledSourceNode.prototype.start = function (...args) {
+      window.__testAudioStarts++;
+      return original.apply(this, args);
+    };
+  });
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
@@ -50,17 +58,25 @@ try {
   if (result.task !== 'completed' || !result.habit || result.log < 1 || !result.version || errors.length) throw new Error(JSON.stringify({ result, errors }));
   await page.evaluate(async () => {
     const b = await window.api.invoke('bootstrap');
-    await window.api.invoke('settings.update', { pomodoro: { ...b.settings.pomodoro, focus_min: 1 / 60, sound: 0 } });
+    await window.api.invoke('settings.update', { pomodoro: { ...b.settings.pomodoro, focus_min: 1 / 60, sound: 1 }, notifications: { ...b.settings.notifications, sound: 1 } });
+    await window.api.invoke('tasks.create', { title: 'Audio UI check', project_id: b.projects[0].id });
   });
+  await page.reload();
+  await page.waitForSelector('.app');
+  await page.locator('[data-testid="smart:all"]').click();
+  await page.locator('.task').filter({ hasText: 'Audio UI check' }).locator('.checkbox').click();
+  await page.waitForFunction(() => window.__testAudioStarts >= 3, null, { timeout: 10000 });
+  const afterTask = await page.evaluate(() => window.__testAudioStarts);
   await page.locator('[data-testid="page:focus"]').click();
   await page.getByRole('button', { name: 'بدء', exact: false }).click();
   await page.locator('[data-testid="smart:today"]').click();
   await page.waitForFunction(async () => (await window.api.invoke('bootstrap')).focusSessions.some((session) => session.completed === 1), null, { timeout: 10000 });
+  await page.waitForFunction((previous) => window.__testAudioStarts >= previous + 3, afterTask, { timeout: 10000 });
   const collapse = page.getByTitle('Collapse', { exact: true });
   await collapse.click();
   await page.waitForFunction(() => document.querySelector('.sidebar')?.classList.contains('collapsed'));
   if (await page.locator('[data-testid="smart:today"] .label').isVisible()) throw new Error('Collapsed sidebar label is visible');
-  console.log('WEB FOCUS AND COLLAPSE: PASS');
+  console.log('WEB AUDIO, FOCUS AND COLLAPSE: PASS');
   console.log('WEB SMOKE PASS:', JSON.stringify(result));
 } finally {
   await browser?.close();

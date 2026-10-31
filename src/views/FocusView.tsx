@@ -59,7 +59,7 @@ export function FocusView() {
       setElapsed(0);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
+  }, [mode, pomodoro?.focus_min, pomodoro?.short_break_min, pomodoro?.long_break_min]);
 
   if (!data) return null;
 
@@ -102,6 +102,10 @@ export function FocusView() {
       setRunning(false);
       const duration = mode === 'stopwatch' ? elapsed : total;
       const wasFocus = mode === 'focus' || mode === 'stopwatch';
+      // A storage error must not prevent the timer alarm from sounding.
+      if (completed && pomodoro?.sound && !(await playCompletionSound())) {
+        toast(lang === 'ar' ? 'تعذّر تشغيل صوت المؤقت؛ جرّب اختبار الصوت في الإعدادات.' : 'Timer audio unavailable; try Test sound in Settings.', 'error');
+      }
       if (wasFocus && duration > 0) {
         const started = startedRef.current ?? toLocalISO(new Date(Date.now() - duration * 1000));
         await call('focus.save', {
@@ -125,7 +129,6 @@ export function FocusView() {
         setMode(nextMode);
         setRemaining(totalFor(nextMode));
         if (completed) {
-          if (pomodoro?.sound) void playCompletionSound();
           if (data.settings.notifications.enabled) {
             try {
               new Notification(t('focusTimer'), { body: lang === 'ar' ? 'انتهت جلسة التركيز، حان وقت الاستراحة' : 'Focus session finished — time for a break' });
@@ -142,7 +145,6 @@ export function FocusView() {
         setMode('focus');
         setRemaining(totalFor('focus'));
         if (completed) {
-          if (pomodoro?.sound) void playCompletionSound();
           if (pomodoro?.auto_start_focus) {
             startedRef.current = toLocalISO(new Date());
             setRunning(true);

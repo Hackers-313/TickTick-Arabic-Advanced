@@ -37,6 +37,14 @@ try {
   const page = await app.firstWindow({ timeout: 60000 });
   await page.waitForSelector('.app', { timeout: 30000 });
   await page.waitForSelector('.sidebar', { timeout: 30000 });
+  await page.evaluate(() => {
+    window.__testAudioStarts = 0;
+    const start = AudioScheduledSourceNode.prototype.start;
+    AudioScheduledSourceNode.prototype.start = function (...args) {
+      window.__testAudioStarts++;
+      return start.apply(this, args);
+    };
+  });
 
   // 1. Arabic RTL defaults.
   check('window title', (await page.title()).includes('TickTick'), await page.title());
@@ -84,6 +92,8 @@ try {
     { timeout: 15000 },
   );
   check('task completed via UI', true);
+  await page.waitForFunction(() => window.__testAudioStarts >= 3, undefined, { timeout: 15000 });
+  check('task completion schedules audio in Electron', true);
 
   // 4. Undo / redo through the keyboard shortcut.
   await page.keyboard.press('Control+z');
@@ -97,6 +107,17 @@ try {
     { timeout: 15000 },
   );
   check('undo restores task', true);
+
+  await page.evaluate(async () => {
+    const boot = await window.api.invoke('bootstrap');
+    await window.api.invoke('settings.update', { pomodoro: { ...boot.settings.pomodoro, focus_min: 1 / 60, sound: 1 } });
+  });
+  await page.locator('[data-testid="page:focus"]').click();
+  await page.locator('.timer-time').getByText('00:01').waitFor({ timeout: 15000 });
+  await page.getByRole('button', { name: 'بدء', exact: false }).click();
+  await page.locator('[data-testid="smart:all"]').click();
+  await page.waitForFunction(() => window.__testAudioStarts >= 6, undefined, { timeout: 15000 });
+  check('timer schedules audio after navigating away', true);
 
   // 5. Switch to English + light theme and verify direction/theme.
   await page.evaluate(() => window.api.invoke('settings.update', { language: 'en', direction: 'ltr', theme: 'daylight' }));
