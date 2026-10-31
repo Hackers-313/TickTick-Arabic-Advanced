@@ -1,0 +1,12 @@
+node_modules/
+dist/
+release/
+build/*.ico
+*.tsbuildinfo
+coverage/
+.vite/
+.DS_Store
+Thumbs.db
+seed/*.db
+seed/*.db-*
+tests/*.log

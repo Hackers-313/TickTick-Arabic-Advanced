@@ -1,0 +1,98 @@
+{
+  "name": "ticktick-arabic-advanced",
+  "productName": "TickTick Arabic Advanced",
+  "version": "1.0.0",
+  "description": "Offline-first Arabic/English task, calendar, habit and focus manager for Windows",
+  "author": "Local build",
+  "license": "MIT",
+  "private": true,
+  "main": "dist/main/index.js",
+  "scripts": {
+    "build:main": "node scripts/build-main.mjs",
+    "build:renderer": "vite build",
+    "build:web": "vite build --config vite.web.config.ts",
+    "preview:web": "vite preview --config vite.web.config.ts",
+    "build": "npm run build:main && npm run build:renderer",
+    "dev": "node scripts/dev.mjs",
+    "start": "electron .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "node tests/e2e/run-e2e.mjs",
+    "test:web": "node tests/e2e/web-smoke.mjs",
+    "test:packaged": "node tests/e2e/smoke-packaged.mjs",
+    "test:portable": "node tests/e2e/smoke-portable.mjs",
+    "seed": "node scripts/make-seed.mjs",
+    "dist": "npm run build && electron-builder --win --x64",
+    "dist:portable": "npm run build && electron-builder --win portable --x64"
+  },
+  "dependencies": {
+    "lucide-react": "^1.66.0",
+    "sql.js": "^1.15.2"
+  },
+  "build": {
+    "appId": "com.local.ticktickarabicadvanced",
+    "productName": "TickTick Arabic Advanced",
+    "copyright": "Local build — offline productivity app",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json",
+      "!**/*.map"
+    ],
+    "asar": true,
+    "compression": "maximum",
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "TickTick-Arabic-Advanced-${version}-portable.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "TickTick Arabic Advanced",
+      "artifactName": "TickTick-Arabic-Advanced-${version}-setup.exe",
+      "installerLanguages": [
+        "ar_SA",
+        "en_US"
+      ],
+      "language": "1033"
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "@types/sql.js": "^1.4.11",
+    "@vitejs/plugin-react": "^5.0.4",
+    "electron": "^45.1.0",
+    "electron-builder": "^26.18.0",
+    "esbuild": "^0.25.10",
+    "playwright-core": "^1.56.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.9",
+    "vitest": "^3.2.4"
+  }
+}
