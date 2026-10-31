@@ -1,0 +1,9 @@
+# TickTick reference investigation — focus
+
+Target: `C:\Program Files (x86)\TickTick\TickTick.exe`, SHA-256 `a9818f422bdcb41a47a2fc2825418ab53b13c73e3068830892a5a57b50e419d6`. Static REA metadata evidence `ev_fe257a010a09fc68f7e82c4629b322e60867d968037c4bd554565ac6c6dd32f3` identifies version 8.2.4.0, x86-64 managed CIL and .NET Framework 4.6.2. The embedded resources include `TickTick.g.resources` and WPF-related resources (page `ev_63bbf72dea45418f6c1b381a60126a6598aa9e622f645e5db1756fc63bb96e1e`). These are static observations, not screenshots or evidence of runtime behavior.
+
+The adjacent `TickTickModels.dll` (SHA-256 `3ba65c5922a2127e4ed475611e782023e7bdf29e380a032c6522311923b8c191`) contains `FocusOptionModel` and `TimerModel`. Their static fields include a `duration` field on the former and `PomodoroTime`, `Name`, `Icon`, `Color` and `Status` on the latter (`ev_3d062cd992d90c58877e25439907d0f54b3327b495aa82b26ddc10f18196541f`, field page `ev_a33a601a4870c125b943bfa19c5dc7d06d6615b9890a0d7484a377b115895653`). Field names do not establish UI, units, validation, supported workflows or runtime behavior.
+
+Inspection of all managed members of `TickTick.exe` was unavailable because metadata exceeded the tool's 64 MiB representation budget (`ev_1be7394613647cf3e2be79c8b47826ad528b5277b3704e3e7be80bffeb5aaac9`). No target program was launched and no user account, data rows, session credentials, licensing logic, or proprietary artwork was accessed. Evidence was exported outside the repository at `../_analysis/rea-ticktick-focus-20261031.json`.
+
+Implementation here is independent: an editable 1–240 minute focus duration on the focus page, saved in the app's own settings. This is a design choice, not a claim that the original has the same limit or UI. Full visual and feature parity is not established; broader comparison would require examining individual views and observed interactions.

@@ -26,6 +26,8 @@
 .icon-picker-grid { display: flex; flex-wrap: wrap; margin-top: 8px; }
 .icon-choice { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 10px; }
 .icon-choice:hover, .icon-choice.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.focus-duration { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; }
+.focus-duration input { width: 82px; text-align: center; }
 .stat-icon { display: inline-grid; place-items: center; width: 36px; height: 36px; color: var(--accent); background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent); border-radius: 12px; }
 
 /* ---------------------------------------------------------------- themes */

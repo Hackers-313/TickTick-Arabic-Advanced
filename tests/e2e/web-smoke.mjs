@@ -66,9 +66,24 @@ try {
   await page.locator('[data-testid="smart:all"]').click();
   await page.locator('.task').filter({ hasText: 'Audio UI check' }).locator('.checkbox').click();
   await page.waitForFunction(() => window.__testAudioStarts >= 3, null, { timeout: 10000 });
-  const afterTask = await page.evaluate(() => window.__testAudioStarts);
+  let afterTask = await page.evaluate(() => window.__testAudioStarts);
   await page.locator('[data-testid="group:progress"]').click();
   await page.locator('[data-testid="page:focus"]').click();
+  await page.locator('#focus-duration').fill('7');
+  await page.getByRole('button', { name: 'تطبيق المدة' }).click();
+  await page.getByText('تم حفظ مدة التركيز').waitFor();
+  await page.locator('.timer-time').getByText('07:00').waitFor();
+  await page.reload();
+  await page.waitForSelector('.app');
+  afterTask = await page.evaluate(() => window.__testAudioStarts);
+  await page.locator('[data-testid="group:progress"]').click();
+  await page.locator('[data-testid="page:focus"]').click();
+  if (await page.locator('#focus-duration').inputValue() !== '7') throw new Error('Focus duration did not persist');
+  await page.evaluate(async () => {
+    const b = await window.api.invoke('bootstrap');
+    await window.api.invoke('settings.update', { pomodoro: { ...b.settings.pomodoro, focus_min: 3 / 60 } });
+  });
+  await page.locator('.timer-time').getByText('00:03').waitFor();
   await page.getByRole('button', { name: 'بدء', exact: false }).click();
   await page.waitForFunction((previous) => window.__testAudioStarts > previous, afterTask, { timeout: 10000 });
   await page.locator('[data-testid="smart:today"]').click();

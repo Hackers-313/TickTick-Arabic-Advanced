@@ -20,6 +20,8 @@ export function FocusView() {
   const [elapsed, setElapsed] = useState(0);
   const [taskId, setTaskId] = useState('');
   const [cycle, setCycle] = useState(0);
+  const [focusMinutesDraft, setFocusMinutesDraft] = useState(String(pomodoro?.focus_min ?? 25));
+  const [savingDuration, setSavingDuration] = useState(false);
   const startedRef = useRef<string | null>(null);
   const finishingRef = useRef(false);
   const finishRef = useRef<(completed: boolean) => void>(() => {});
@@ -62,6 +64,10 @@ export function FocusView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, pomodoro?.focus_min, pomodoro?.short_break_min, pomodoro?.long_break_min]);
 
+  useEffect(() => {
+    if (pomodoro) setFocusMinutesDraft(String(pomodoro.focus_min));
+  }, [pomodoro?.focus_min]);
+
   if (!data) return null;
 
   const focusSessions = data.focusSessions.filter((s) => s.mode === 'focus' || s.mode === 'stopwatch');
@@ -94,6 +100,24 @@ export function FocusView() {
     startedRef.current = null;
     setRemaining(totalFor(m));
     setElapsed(0);
+  };
+
+  const saveDuration = async () => {
+    const minutes = Number(focusMinutesDraft);
+    if (!Number.isInteger(minutes) || minutes < 1 || minutes > 240) {
+      toast(lang === 'ar' ? 'أدخل مدة من 1 إلى 240 دقيقة.' : 'Enter a duration between 1 and 240 minutes.', 'error');
+      return;
+    }
+    if (!pomodoro || running || startedRef.current) return;
+    setSavingDuration(true);
+    try {
+      await call('settings.update', { pomodoro: { ...pomodoro, focus_min: minutes } });
+      if (mode === 'focus') setRemaining(minutes * 60);
+      await refresh();
+      toast(lang === 'ar' ? 'تم حفظ مدة التركيز' : 'Focus duration saved');
+    } catch (error) {
+      toast(error instanceof Error ? error.message : String(error), 'error');
+    } finally { setSavingDuration(false); }
   };
 
   const finish = async (completed: boolean) => {
@@ -187,6 +211,16 @@ export function FocusView() {
               </button>
             ))}
           </div>
+
+          <form className="focus-duration" onSubmit={(event) => { event.preventDefault(); void saveDuration(); }}>
+            <label htmlFor="focus-duration">{lang === 'ar' ? 'مدة التركيز (دقيقة)' : 'Focus duration (minutes)'}</label>
+            <input id="focus-duration" type="number" min={1} max={240} step={1} value={focusMinutesDraft}
+              onChange={(event) => setFocusMinutesDraft(event.target.value)} disabled={running || !!startedRef.current || savingDuration} />
+            <button className="btn" type="submit" disabled={running || !!startedRef.current || savingDuration}>
+              {lang === 'ar' ? 'تطبيق المدة' : 'Apply duration'}
+            </button>
+          </form>
+          {(running || !!startedRef.current) && <p className="small muted">{lang === 'ar' ? 'أعد ضبط المؤقت لتغيير المدة.' : 'Reset the timer to change its duration.'}</p>}
 
           <div className="timer-ring" style={{ '--p': Math.max(0, Math.min(100, progress)) } as CSSProperties}>
             <div className="timer-inner">

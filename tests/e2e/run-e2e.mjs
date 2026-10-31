@@ -108,12 +108,17 @@ try {
   );
   check('undo restores task', true);
 
+  await page.locator('[data-testid="group:progress"]').click();
+  await page.locator('[data-testid="page:focus"]').click();
+  await page.locator('#focus-duration').fill('7');
+  await page.getByRole('button', { name: 'تطبيق المدة' }).click();
+  await page.locator('.timer-time').getByText('07:00').waitFor({ timeout: 15000 });
+  const duration = await page.evaluate(async () => (await window.api.invoke('bootstrap')).settings.pomodoro.focus_min);
+  check('focus duration editable and saved', duration === 7);
   await page.evaluate(async () => {
     const boot = await window.api.invoke('bootstrap');
     await window.api.invoke('settings.update', { pomodoro: { ...boot.settings.pomodoro, focus_min: 3 / 60, sound: 1, tick_sound: 1 } });
   });
-  await page.locator('[data-testid="group:progress"]').click();
-  await page.locator('[data-testid="page:focus"]').click();
   await page.locator('.timer-time').getByText('00:03').waitFor({ timeout: 15000 });
   const beforeTick = await page.evaluate(() => window.__testAudioStarts);
   await page.getByRole('button', { name: 'بدء', exact: false }).click();
