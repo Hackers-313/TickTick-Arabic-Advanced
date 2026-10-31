@@ -48,6 +48,19 @@ try {
     return { task: b.tasks.find((x) => x.id === taskId)?.status, habit: b.habits.some((x) => x.name === 'Web habit check'), log: b.habitLogs.length, version: exported.version };
   }, id);
   if (result.task !== 'completed' || !result.habit || result.log < 1 || !result.version || errors.length) throw new Error(JSON.stringify({ result, errors }));
+  await page.evaluate(async () => {
+    const b = await window.api.invoke('bootstrap');
+    await window.api.invoke('settings.update', { pomodoro: { ...b.settings.pomodoro, focus_min: 1 / 60, sound: 0 } });
+  });
+  await page.locator('[data-testid="page:focus"]').click();
+  await page.getByRole('button', { name: 'بدء', exact: false }).click();
+  await page.locator('[data-testid="smart:today"]').click();
+  await page.waitForFunction(async () => (await window.api.invoke('bootstrap')).focusSessions.some((session) => session.completed === 1), null, { timeout: 10000 });
+  const collapse = page.getByTitle('Collapse', { exact: true });
+  await collapse.click();
+  await page.waitForFunction(() => document.querySelector('.sidebar')?.classList.contains('collapsed'));
+  if (await page.locator('[data-testid="smart:today"] .label').isVisible()) throw new Error('Collapsed sidebar label is visible');
+  console.log('WEB FOCUS AND COLLAPSE: PASS');
   console.log('WEB SMOKE PASS:', JSON.stringify(result));
 } finally {
   await browser?.close();

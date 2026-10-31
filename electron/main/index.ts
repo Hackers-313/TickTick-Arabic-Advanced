@@ -349,10 +349,12 @@ async function handle(method: string, args: unknown[]): Promise<unknown> {
     case 'sync.connect': {
       const result = await sync.connect(userData);
       if (result.ok) {
-        const account = await sync.fetchAccount(userData);
+        const initial = await sync.runSync(userData, 'initial');
+        if (!initial.ok) return { ok: false, error: initial.error ?? 'INITIAL_SYNC_FAILED' };
+        // Open API deployments may not expose a user-profile endpoint.
+        const account = (await sync.fetchAccount(userData)) ?? { name: 'TickTick', email: '', userId: '' };
         const current = getSettings();
         broadcast('settings:changed', saveSettings({ sync: { ...current.sync, account, last_status: 'ok', enabled: 1 } }));
-        const initial = await sync.runSync(userData, 'initial');
         sync.startAutoSync(userData);
         return { ok: true, account, initial };
       }

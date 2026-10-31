@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../store';
 import type { Settings } from '../../shared/types';
+import { playCompletionSound } from '../lib/sound';
 
 type Tab = 'appearance' | 'notifications' | 'pomodoro' | 'data' | 'tags' | 'templates' | 'shortcuts' | 'about';
 
@@ -20,6 +21,9 @@ export function SettingsView() {
   if (!data || !settings) return null;
 
   const set = (patch: Partial<Settings>) => void updateSettings(patch);
+  const testSound = async () => {
+    if (!(await playCompletionSound())) toast(lang === 'ar' ? 'تعذّر تشغيل الصوت؛ تحقق من جهاز الإخراج وإعدادات المتصفح.' : 'Audio unavailable; check your output device and browser settings.', 'error');
+  };
 
   const pickSave = async (defaultName: string, filters: { name: string; extensions: string[] }[]) => {
     return (await call<string | null>('app.pickSavePath', defaultName, filters)) ?? null;
@@ -209,6 +213,7 @@ export function SettingsView() {
                   value={settings.notifications.sound === 1}
                   onChange={(v) => set({ notifications: { ...settings.notifications, sound: v ? 1 : 0 } })}
                 />
+                <button className="btn" onClick={() => void testSound()}>{lang === 'ar' ? 'اختبار الصوت' : 'Test sound'}</button>
                 <ToggleRow
                   title={t('constantReminder')}
                   desc={lang === 'ar' ? 'تفعيل التذكير المستمر افتراضيًا' : 'Enable constant reminders by default'}
@@ -271,6 +276,7 @@ export function SettingsView() {
                   value={settings.pomodoro.sound === 1}
                   onChange={(v) => set({ pomodoro: { ...settings.pomodoro, sound: v ? 1 : 0 } })}
                 />
+                <button className="btn" onClick={() => void testSound()}>{lang === 'ar' ? 'اختبار الصوت' : 'Test sound'}</button>
               </div>
             )}
 

@@ -25,8 +25,7 @@ An offline-first Arabic/English productivity desktop app for Windows, with optio
 | `release/TickTick-Arabic-Advanced-1.0.0-setup.exe` | مثبّت NSIS (للمستخدم الحالي، مع اختيار مجلد التثبيت) | ~116 MB |
 | `release/win-unpacked/` | نسخة غير مضغوطة للتشغيل المباشر | — |
 
-- SHA-256 للنسخة المحمولة المبنية محليًا: `B1216B22664A7A07F776BBD6B718E1DA657A2CBC5EA92B7939A0745328BE236D`
-- SHA-256 للمثبّت المبني محليًا: `DA8DDA74123DA1BAC5A358A842701F0966B73D7F2F38EC1539F88FBFF4252C81`
+- لحساب بصمة الملفات المحلية بعد بنائها: `Get-FileHash release\*.exe -Algorithm SHA256`.
 
 > الملفات غير موقّعة رقميًا (لا توجد شهادة توقيع)، لذا قد يعرض Windows SmartScreen تحذيرًا عند أول تشغيل. هذا متوقع في البناء المحلي.
 
@@ -35,7 +34,7 @@ An offline-first Arabic/English productivity desktop app for Windows, with optio
 1. شغّل الملف المحمول أو ثبّت التطبيق.
 2. تُنشأ قاعدة البيانات تلقائيًا في:
    `%APPDATA%\TickTick Arabic Advanced\ticktick-arabic.db`
-3. الواجهة تبدأ بالعربية واتجاه RTL والثيم الداكن `Midnight`.
+3. يبدأ التثبيت الجديد بالعربية واتجاه RTL والثيم الفاتح `Daylight`؛ تبقى اختيارات الثيم المحفوظة مسبقًا دون تغيير.
 4. يمكن تحميل بيانات تجريبية من **الإعدادات ← البيانات ← تحميل بيانات تجريبية**، أو البدء بقائمة فارغة.
 
 لا يحتاج التطبيق إلى حساب أو إنترنت لأي ميزة أساسية.

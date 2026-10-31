@@ -1,5 +1,6 @@
 import { useEffect, type ComponentType } from 'react';
 import { useApp } from './store';
+import { prepareSound, playCompletionSound } from './lib/sound';
 import { TitleBar } from './components/TitleBar';
 import { Sidebar } from './components/Sidebar';
 import { TaskEditor } from './components/TaskEditor';
@@ -41,6 +42,13 @@ export function App() {
     useApp();
 
   useEffect(() => {
+    const unlock = () => { void prepareSound(); };
+    window.addEventListener('pointerdown', unlock, { once: true });
+    window.addEventListener('keydown', unlock, { once: true });
+    return () => { window.removeEventListener('pointerdown', unlock); window.removeEventListener('keydown', unlock); };
+  }, []);
+
+  useEffect(() => {
     if (!settings) return;
     const root = document.documentElement;
     root.dataset.theme = settings.theme;
@@ -79,6 +87,7 @@ export function App() {
   useEffect(() => {
     const offReminders = window.api.on('reminders:fired', (payload) => {
       const items = (payload as { label?: string; title?: string }[]) ?? [];
+      if (items.length && data?.settings.notifications.enabled && data.settings.notifications.sound) void playCompletionSound();
       for (const item of items) {
         toast(`🔔 ${item.label || item.title || (lang === 'ar' ? 'تذكير' : 'Reminder')}`, 'info');
         try {
@@ -98,7 +107,7 @@ export function App() {
       offReminders();
       offOpen();
     };
-  }, [toast, openEditor, lang, data?.settings.notifications.enabled]);
+  }, [toast, openEditor, lang, data?.settings.notifications.enabled, data?.settings.notifications.sound]);
 
   if (loading) {
     return (
@@ -136,7 +145,10 @@ export function App() {
       <TitleBar />
       <div className="body">
         <Sidebar />
-        {Page ? <Page /> : <TasksView />}
+        {Page === FocusView ? null : Page ? <Page /> : <TasksView />}
+        <div style={{ display: Page === FocusView ? 'contents' : 'none' }} aria-hidden={Page !== FocusView}>
+          <FocusView />
+        </div>
       </div>
       {editor.open && <TaskEditor key={editor.taskId ?? 'new'} />}
       {eventEditor.open && <EventEditor key={eventEditor.eventId ?? eventEditor.start ?? 'new'} />}

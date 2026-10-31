@@ -34,9 +34,14 @@ export function FocusView() {
 
   useEffect(() => {
     if (!running) return;
+    let previous = Date.now();
     const id = window.setInterval(() => {
-      if (mode === 'stopwatch') setElapsed((e) => e + 1);
-      else setRemaining((r) => Math.max(0, r - 1));
+      const now = Date.now();
+      const seconds = Math.floor((now - previous) / 1000);
+      if (seconds < 1) return;
+      previous += seconds * 1000;
+      if (mode === 'stopwatch') setElapsed((e) => e + seconds);
+      else setRemaining((r) => Math.max(0, r - seconds));
     }, 1000);
     return () => window.clearInterval(id);
   }, [running, mode]);

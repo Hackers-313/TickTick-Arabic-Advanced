@@ -20,23 +20,37 @@ export function SyncView() {
   const [busy, setBusy] = useState<'connect' | 'sync' | 'rebuild' | null>(null);
 
   if (!data || !sync) return null;
+  if (window.api.platform === 'web') return (
+    <div className="main"><div className="toolbar"><h1>{t('sync')}</h1></div><div className="content"><div className="panel">
+      {lang === 'ar' ? 'ربط TickTick غير متاح في الموقع. استخدم تطبيق Windows، وأنشئ تطبيقًا لدى TickTick للحصول على Client ID وClient Secret.' : 'TickTick sync is unavailable on the website. Use the Windows app and register a TickTick developer app to obtain a Client ID and Client Secret.'}
+    </div></div></div>
+  );
 
   const saveCredentials = async () => {
-    await updateSettings({ sync: { ...sync, client_id: clientId.trim(), client_secret: clientSecret.trim(), redirect_uri: redirect.trim() } });
-    toast(t('saved'));
+    try {
+      await call('settings.update', { sync: { ...sync, client_id: clientId.trim(), client_secret: clientSecret.trim(), redirect_uri: redirect.trim() } });
+      await refresh();
+      toast(t('saved'));
+    } catch (error) { toast(error instanceof Error ? error.message : String(error), 'error'); }
   };
 
   const connect = async () => {
     setBusy('connect');
     try {
+      // Save the fields the user sees before opening OAuth; a separate Save click is not required.
+      await call('settings.update', { sync: { ...sync, client_id: clientId.trim(), client_secret: clientSecret.trim(), redirect_uri: redirect.trim() } });
       const res = await call<{ ok: boolean; error?: string; account?: { name: string; email: string }; initial?: SyncResult }>('sync.connect');
       await refresh();
       if (res.ok) {
         toast(lang === 'ar' ? 'تم ربط الحساب' : 'Account connected');
       } else {
         const msg =
-          res.error === 'MISSING_CLIENT_ID'
-            ? t('syncNotConfigured')
+          res.error === 'MISSING_CLIENT_ID' || res.error === 'MISSING_CLIENT_SECRET'
+            ? (lang === 'ar' ? 'أدخل Client ID وClient Secret من بوابة مطوري TickTick.' : 'Enter the Client ID and Client Secret from the TickTick developer portal.')
+            : res.error === 'INVALID_REDIRECT_URI'
+              ? (lang === 'ar' ? 'يجب أن يكون عنوان العودة http://127.0.0.1 مع منفذ، وأن يطابق العنوان المسجل في TickTick تمامًا.' : 'Use an http://127.0.0.1 redirect with a port that exactly matches the TickTick developer portal.')
+            : res.error === 'CALLBACK_SERVER_FAILED'
+              ? (lang === 'ar' ? 'تعذر فتح منفذ العودة المحلي؛ تأكد من أنه غير مستخدم.' : 'Could not open the callback port; make sure it is available.')
             : res.error === 'AUTH_CANCELLED'
               ? lang === 'ar'
                 ? 'أُلغيت عملية الربط أو انتهت مهلتها'
@@ -123,7 +137,7 @@ export function SyncView() {
             <button className="btn" onClick={() => void saveCredentials()}>
               💾 {t('save')}
             </button>
-            <button className="btn primary" onClick={() => void connect()} disabled={busy === 'connect' || !clientId.trim()}>
+            <button className="btn primary" onClick={() => void connect()} disabled={busy === 'connect' || !clientId.trim() || !clientSecret.trim()}>
               {busy === 'connect' ? <span className="spinner" /> : '🔗'} {t('connectAccount')}
             </button>
             {sync.account && (
@@ -145,6 +159,7 @@ export function SyncView() {
               ? 'يجب إنشاء تطبيق في بوابة مطوري TickTick والحصول على Client ID وClient Secret. تُخزَّن الرموز مشفرة عبر Windows DPAPI، ولا تُرسل كلمة مرورك إلى التطبيق.'
               : 'Create an app in the TickTick developer portal to obtain a Client ID and Secret. Tokens are encrypted with Windows DPAPI; your password is never sent to this app.'}
           </p>
+          <p className="small muted">{lang === 'ar' ? 'ملاحظة أمان: يُحفظ Client Secret في إعدادات قاعدة البيانات المحلية غير المشفرة، وقد يتضمنه تصدير JSON؛ لا تشارك ملف التصدير.' : 'Security note: the Client Secret is stored in unencrypted local settings and may be included in JSON exports; do not share exported files.'}</p>
         </div>
 
         <div className="panel">

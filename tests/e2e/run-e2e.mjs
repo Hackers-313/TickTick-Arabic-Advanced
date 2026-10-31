@@ -56,7 +56,7 @@ try {
     undefined,
     { timeout: 15000 },
   );
-  check('quick-add task appears', await page.locator('.main').innerText().then((t) => t.includes('مهمة اختبار E2E')));
+  check('quick-add task appears', await page.locator('.main:visible').innerText().then((t) => t.includes('مهمة اختبار E2E')));
 
   const created = await page.evaluate(async () => {
     const boot = await window.api.invoke('bootstrap');
@@ -133,7 +133,7 @@ try {
   for (const key of pages) {
     await page.locator(`[data-testid="page:${key}"]`).click();
     await page.waitForTimeout(300);
-    const body = await page.locator('.main, .page').first().innerText().catch(() => '');
+    const body = await page.locator('.main:visible, .page:visible').first().innerText().catch(() => '');
     check(`page renders: ${key}`, body.length > 0);
   }
   check('no renderer errors', consoleErrors.length === 0, consoleErrors.slice(0, 3).join(' | '));

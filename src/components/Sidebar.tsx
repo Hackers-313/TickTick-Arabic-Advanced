@@ -218,7 +218,7 @@ export function Sidebar() {
           title={collapsed ? 'Expand' : 'Collapse'}
         >
           <span className="icon">
-            <Icon name={collapsed ? 'chevron-right' : 'chevron-left'} size={17} />
+            <Icon name={collapsed ? (lang === 'ar' ? 'chevron-left' : 'chevron-right') : (lang === 'ar' ? 'chevron-right' : 'chevron-left')} size={17} />
           </span>
           <span className="label">{lang === 'ar' ? 'طي الشريط الجانبي' : 'Collapse sidebar'}</span>
         </button>
@@ -277,7 +277,7 @@ function NavItem({
   return (
     <div style={{ position: 'relative' }} className="sidebar-row">
       <button className={`nav-item ${active ? 'active' : ''}`} onClick={onClick} title={label} data-testid={testId}>
-        {dot ? <span className="dot" style={{ background: dot }} /> : <span className="icon"><Icon name={icon} size={17} /></span>}
+        <span className="icon" style={dot ? { color: dot } : undefined}><Icon name={icon} size={17} /></span>
         <span className="label">{label}</span>
         {count ? <span className="count">{count}</span> : null}
       </button>

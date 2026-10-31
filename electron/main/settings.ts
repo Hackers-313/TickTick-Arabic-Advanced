@@ -4,7 +4,7 @@ import { getSetting, setSetting } from './repo';
 export const DEFAULT_SETTINGS: Settings = {
   language: 'ar',
   direction: 'rtl',
-  theme: 'midnight',
+  theme: 'daylight',
   accent: '#4f7cff',
   week_start: 6,
   hour12: 1,

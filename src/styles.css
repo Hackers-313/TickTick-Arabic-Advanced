@@ -306,6 +306,13 @@ kbd {
 .sidebar.collapsed {
   width: var(--sidebar-collapsed);
 }
+.sidebar.collapsed .label,
+.sidebar.collapsed .count,
+.sidebar.collapsed .sidebar-title,
+.sidebar.collapsed kbd { display: none; }
+.sidebar.collapsed .nav-item,
+.sidebar.collapsed .quick-add { justify-content: center; padding-inline: 0; }
+.sidebar.collapsed .nav-item .icon { display: grid; place-items: center; }
 .sidebar-scroll {
   flex: 1;
   overflow-y: auto;

@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { addMinutes, parseLocal, toLocalISO } from '../../shared/date';
+import { isSupportedRedirectUri } from '../../shared/oauth';
 import type { SyncLogEntry, SyncSettings, Task } from '../../shared/types';
 import { all, one, run, transaction } from './db';
 import { createProject, createTask, getTask, updateTask, listTasks, listProjects } from './repo';
@@ -38,18 +39,18 @@ export function saveTokens(userData: string, tokens: StoredTokens): void {
   const file = secretsPath(userData);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const json = JSON.stringify(tokens);
-  const payload = safeStorage.isEncryptionAvailable()
-    ? safeStorage.encryptString(json)
-    : Buffer.from(json, 'utf8');
+  if (!safeStorage.isEncryptionAvailable()) throw new Error('SECURE_STORAGE_UNAVAILABLE');
+  const payload = safeStorage.encryptString(json);
   fs.writeFileSync(file, payload.toString('base64'), { mode: 0o600 });
 }
 
 export function loadTokens(userData: string): StoredTokens | null {
   const file = secretsPath(userData);
   if (!fs.existsSync(file)) return null;
+  if (!safeStorage.isEncryptionAvailable()) return null;
   try {
     const raw = Buffer.from(fs.readFileSync(file, 'utf8'), 'base64');
-    const json = safeStorage.isEncryptionAvailable() ? safeStorage.decryptString(raw) : raw.toString('utf8');
+    const json = safeStorage.decryptString(raw);
     return JSON.parse(json) as StoredTokens;
   } catch {
     return null;
@@ -67,6 +68,11 @@ export async function connect(userData: string): Promise<{ ok: boolean; error?: 
   const settings = getSettings();
   const { client_id, redirect_uri, scopes } = settings.sync;
   if (!client_id) return { ok: false, error: 'MISSING_CLIENT_ID' };
+  if (!settings.sync.client_secret) return { ok: false, error: 'MISSING_CLIENT_SECRET' };
+  if (!safeStorage.isEncryptionAvailable()) return { ok: false, error: 'SECURE_STORAGE_UNAVAILABLE' };
+  if (callbackServer) return { ok: false, error: 'AUTH_ALREADY_RUNNING' };
+  if (!isSupportedRedirectUri(redirect_uri)) return { ok: false, error: 'INVALID_REDIRECT_URI' };
+  const redirect = new URL(redirect_uri);
   const state = randomBytes(12).toString('hex');
   pendingState = state;
   const url = new URL(AUTH_URL);
@@ -76,14 +82,21 @@ export async function connect(userData: string): Promise<{ ok: boolean; error?: 
   url.searchParams.set('scope', scopes || 'tasks:read tasks:write');
   url.searchParams.set('state', state);
 
-  const redirect = new URL(redirect_uri);
-  const port = Number(redirect.port || 80);
+  const port = Number(redirect.port);
 
-  await new Promise<void>((resolve) => {
-    if (callbackServer) {
-      callbackServer.close();
+  return await new Promise<{ ok: boolean; error?: string }>((resolve) => {
+    let finished = false;
+    let exchanging = false;
+    let timer: NodeJS.Timeout;
+    const finish = (result: { ok: boolean; error?: string }) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      callbackServer?.close();
       callbackServer = null;
-    }
+      pendingState = null;
+      resolve(result);
+    };
     callbackServer = http.createServer((req, res) => {
       const reqUrl = new URL(req.url ?? '/', `http://127.0.0.1:${port}`);
       if (reqUrl.pathname !== redirect.pathname) {
@@ -93,32 +106,28 @@ export async function connect(userData: string): Promise<{ ok: boolean; error?: 
       const code = reqUrl.searchParams.get('code');
       const returnedState = reqUrl.searchParams.get('state');
       const error = reqUrl.searchParams.get('error');
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end(
-        `<html dir="rtl"><body style="font-family:system-ui;padding:40px;text-align:center">
-        <h2>${error ? 'تعذر ربط الحساب' : 'تم ربط الحساب'}</h2>
-        <p>${error ? String(error) : 'يمكنك إغلاق هذه الصفحة والعودة إلى التطبيق.'}</p></body></html>`,
-      );
-      callbackServer?.close();
-      callbackServer = null;
-      if (error) return resolve();
-      if (!code || returnedState !== pendingState) return resolve();
-      void exchangeCode(userData, code, redirect_uri).then(resolve).catch(() => resolve());
+      if (returnedState !== pendingState) { res.writeHead(400).end('Invalid authorization state'); return; }
+      if (error || !code) {
+        res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Authorization was denied. Return to the application.');
+        finish({ ok: false, error: 'AUTH_DENIED' });
+        return;
+      }
+      if (exchanging) { res.writeHead(409).end('Authorization already in progress'); return; }
+      exchanging = true;
+      void exchangeCode(userData, code, redirect_uri).then(() => {
+        res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Authorization complete. Return to the application.');
+        finish({ ok: true });
+      }).catch((err: unknown) => {
+        res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Authorization failed. Return to the application for details.');
+        finish({ ok: false, error: err instanceof Error ? err.message : 'TOKEN_EXCHANGE_FAILED' });
+      });
     });
-    callbackServer.on('error', () => resolve());
+    callbackServer.on('error', () => finish({ ok: false, error: 'CALLBACK_SERVER_FAILED' }));
     callbackServer.listen(port, '127.0.0.1', () => {
-      void shell.openExternal(url.toString());
+      void shell.openExternal(url.toString()).catch(() => finish({ ok: false, error: 'BROWSER_OPEN_FAILED' }));
     });
-    // give up after 5 minutes
-    setTimeout(() => {
-      callbackServer?.close();
-      callbackServer = null;
-      resolve();
-    }, 5 * 60 * 1000);
+    timer = setTimeout(() => finish({ ok: false, error: 'AUTH_TIMEOUT' }), 5 * 60 * 1000);
   });
-
-  const tokens = loadTokens(userData);
-  return tokens ? { ok: true } : { ok: false, error: 'AUTH_CANCELLED' };
 }
 
 async function exchangeCode(userData: string, code: string, redirectUri: string): Promise<void> {
@@ -135,6 +144,7 @@ async function exchangeCode(userData: string, code: string, redirectUri: string)
   });
   if (!res.ok) throw new Error(`Token exchange failed: ${res.status}`);
   const json = (await res.json()) as { access_token: string; refresh_token?: string; expires_in?: number; scope?: string };
+  if (!json.access_token) throw new Error('TOKEN_MISSING');
   saveTokens(userData, {
     access_token: json.access_token,
     refresh_token: json.refresh_token,
