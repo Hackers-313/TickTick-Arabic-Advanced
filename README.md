@@ -1,8 +1,8 @@
 # TickTick Arabic Advanced
 
-> نسخة الويب تجريبية وتخزن البيانات في المتصفح فقط؛ راجع [حدود نسخة الويب](docs/WEB.md) وصدّر بياناتك دوريًا. ملفات EXE المحلية في `release/` بُنيت قبل تحديثات الأيقونات والصوت ويجب إعادة بنائها للحصول على أحدث نسخة.
+> نسخة الويب تجريبية وتخزن البيانات في المتصفح فقط؛ راجع [حدود نسخة الويب](docs/WEB.md) وصدّر بياناتك دوريًا. ملفات EXE ليست ضمن مستودع Git، ويمكن بناؤها محليًا باستخدام `npm run dist`.
 
-> Web support is experimental. Data stays in this browser; see [web limitations](docs/WEB.md). Local executables must be rebuilt to include the latest UI and sound changes.
+> Web support is experimental. Data stays in this browser; see [web limitations](docs/WEB.md). Executables are not committed; build them locally with `npm run dist`.
 
 تطبيق مهام وإنتاجية سطح مكتب لنظام ويندوز، عربي أولًا، يعمل **بالكامل دون إنترنت**، مع مزامنة اختيارية رسمية مع حساب TickTick.
 
@@ -25,8 +25,8 @@ An offline-first Arabic/English productivity desktop app for Windows, with optio
 | `release/TickTick-Arabic-Advanced-1.0.0-setup.exe` | مثبّت NSIS (للمستخدم الحالي، مع اختيار مجلد التثبيت) | ~116 MB |
 | `release/win-unpacked/` | نسخة غير مضغوطة للتشغيل المباشر | — |
 
-- SHA-256 للنسخة المحمولة: `987E61D6C9D67CB5C839B2D5F065FB54966C5E5534584AE3BD695A2ECF1D6A32`
-- SHA-256 للمثبّت: `3743207B9C8D2E7536F5E7BAB74AB5C58FC447FA5C23CC876882C7B3827807A3`
+- SHA-256 للنسخة المحمولة المبنية محليًا: `B1216B22664A7A07F776BBD6B718E1DA657A2CBC5EA92B7939A0745328BE236D`
+- SHA-256 للمثبّت المبني محليًا: `DA8DDA74123DA1BAC5A358A842701F0966B73D7F2F38EC1539F88FBFF4252C81`
 
 > الملفات غير موقّعة رقميًا (لا توجد شهادة توقيع)، لذا قد يعرض Windows SmartScreen تحذيرًا عند أول تشغيل. هذا متوقع في البناء المحلي.
 
